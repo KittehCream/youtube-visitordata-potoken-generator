@@ -1,0 +1,137 @@
+name: Generate VisitorData & PoToken
+
+on:
+  workflow_dispatch:
+    inputs:
+      number_of_entries:
+        description: "Amount of VisitorData & PoToken to generate"
+        required: true
+        default: 20
+      interval_minutes:
+        description: "Interval time in minutes"
+        required: true
+        default: 360
+
+  schedule:
+    - cron: "0 */6 * * *" # Run every 6 hours
+
+jobs:
+  generate_and_send:
+    name: Generate VisitorData & PoToken
+    permissions: write-all
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "22.12.0"
+
+      - name: Install Required Packages
+        run: |
+          npm install youtube-po-token-generator axios date-fns
+
+      - name: Generate VisitorData and PoToken
+        run: |
+          cat << 'EOF' > generate_and_send_to_telegram.js
+          #!/usr/bin/env node
+          
+          const { generate } = require("youtube-po-token-generator");
+          const fs = require("fs");
+          const { format } = require("date-fns");
+          const axios = require("axios");
+
+          (async () => {
+            let logOutput = "";
+            const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN;
+            const telegramChatId = process.env.TELEGRAM_CHAT_ID;
+            const entryCount = parseInt(process.env.NUMBER_OF_ENTRIES, 10);
+
+            const headerText = 
+              "------------------------------------------\n\n" +
+              "🎥 YOUTUBE VISITORDATA & POTOKEN GENERATOR\n\n" +
+              "------------------------------------------\n\n" +
+              "👤 CREATED BY Okki Dwi\n" +
+              "🔄 FORKED FROM [YunzheZJU](https://github.com/YunzheZJU/youtube-po-token-generator)\n\n" +
+              "🌐 VISIT: [GitHub Repo](https://github.com/okkidwi/youtube-visitordata-potoken-generator)\n\n" +
+              "------------------------------------------\n\n";
+
+            const headerTelegram = 
+              "*🎥 YOUTUBE VISITORDATA & POTOKEN GENERATOR*\n\n" +
+              "------------------------------------------\n\n" +
+              "👤 *CREATED BY:* @okkidwi\n" +
+              "🔄 *FORKED FROM:* [YunzheZJU](https://github.com/YunzheZJU/youtube-po-token-generator)\n\n" +
+              "🌐 *VISIT:* [GitHub Repo](https://github.com/okkidwi/youtube-visitordata-potoken-generator)\n\n" +
+              "------------------------------------------\n\n";
+
+            logOutput += headerText;
+
+            if (telegramBotToken && telegramChatId) {
+              try {
+                await axios.post(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
+                  chat_id: telegramChatId,
+                  text: headerTelegram,
+                  parse_mode: "Markdown"
+                });
+              } catch (error) {
+                console.error("⚠️ Failed to send header to Telegram:", error.message);
+              }
+            } else {
+              console.warn("⚠️ TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID is missing. Skipping Telegram header.");
+            }
+
+            for (let i = 0; i < entryCount; i++) {
+              try {
+                const timestamp = format(new Date(), "yyyy-MM-dd HH:mm:ss");
+                const visitorData = await generate();
+                const poToken = visitorData.poToken;
+
+                const logEntry = `ENTRY #${i + 1}\n\n` +
+                  "------------------------------------------\n\n" +
+                  `📆 Timestamp: ${timestamp} UTC\n\n` +
+                  `🔹 VisitorData: ${visitorData.visitorData}\n\n` +
+                  `🔑 PoToken: ${poToken}\n\n` +
+                  "------------------------------------------\n\n";
+
+                const telegramEntry = `*ENTRY #${i + 1}*\n\n` +
+                  "------------------------------------------\n\n" +
+                  `📆 *Timestamp:* \`${timestamp} UTC\`\n\n` +
+                  `🔹 *VisitorData:* \`${visitorData.visitorData}\`\n\n` +
+                  `🔑 *PoToken:* \`${poToken}\`\n\n` +
+                  "------------------------------------------\n\n";
+
+                logOutput += logEntry;
+
+                if (telegramBotToken && telegramChatId) {
+                  await axios.post(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
+                    chat_id: telegramChatId,
+                    text: telegramEntry,
+                    parse_mode: "Markdown"
+                  }).catch(error => {
+                    console.error(`⚠️ Failed to send entry #${i + 1} to Telegram: ${error.message}`);
+                  });
+                }
+
+              } catch (error) {
+                console.error(`Error generating PoToken for entry #${i + 1}: ${error.message}`);
+              }
+            }
+
+            fs.writeFileSync("generated_results.log", logOutput);
+            console.log("✅ generated_results.log has been successfully saved!");
+          })();
+          EOF
+          chmod +x generate_and_send_to_telegram.js
+          node generate_and_send_to_telegram.js
+        env:
+          NUMBER_OF_ENTRIES: ${{ inputs.number_of_entries }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+
+      - name: Upload Generated Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: visitor-data-po-tokens
+          path: generated_results.log

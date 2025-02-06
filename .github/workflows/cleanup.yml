@@ -1,0 +1,83 @@
+name: Delete Old Workflows
+
+on:
+  workflow_dispatch:
+    inputs:
+      days_to_keep:
+        description: "Number of days to keep workflow runs (older runs will be deleted)"
+        required: true
+        default: 2
+  schedule:
+    - cron: "0 1 * * *" # 01:00 UTC
+
+jobs:
+  delete_old_workflows:
+    name: Delete Old Workflow Runs
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: read
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4.1.1
+
+      - name: Get Old Workflow Runs
+        id: get_runs
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const daysToKeep = parseInt('${{ github.event.inputs.days_to_keep || 2 }}', 10);
+
+            const cutoffDate = new Date();
+            cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
+
+            const runs = await github.rest.actions.listWorkflowRunsForRepo({
+              owner,
+              repo,
+              per_page: 100,
+              status: 'completed'
+            });
+
+            const runsToDelete = runs.data.workflow_runs.filter(run => {
+              return new Date(run.created_at) < cutoffDate;
+            });
+
+            if (runsToDelete.length === 0) {
+              console.log("No old workflow runs found.");
+              core.setOutput('runs_to_delete', '[]'); 
+            } else {
+              core.setOutput('runs_to_delete', JSON.stringify(runsToDelete.map(run => run.id)));
+              console.log(`Found ${runsToDelete.length} workflow runs to delete.`);
+            }
+
+      - name: Delete Old Workflow Runs
+        uses: actions/github-script@v6
+        if: steps.get_runs.outputs.runs_to_delete != '[]'
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const runsToDeleteStr = '${{ steps.get_runs.outputs.runs_to_delete }}';
+
+            if (!runsToDeleteStr || runsToDeleteStr === '[]') {
+              console.log("No workflow runs to delete.");
+              return;
+            }
+
+            const runsToDelete = JSON.parse(runsToDeleteStr);
+
+            for (const runId of runsToDelete) {
+              try {
+                await github.rest.actions.deleteWorkflowRun({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  run_id: runId,
+                });
+                console.log(`Deleted workflow run ${runId}`);
+              } catch (error) {
+                console.error(`Error deleting workflow run ${runId}: ${error}`);
+              }
+            }
