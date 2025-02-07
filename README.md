@@ -38,7 +38,7 @@ This project includes a **GitHub Actions workflow** that supports both **manual*
 - This is useful when you need on-demand PoTokens.
 
 ### 🔹 Scheduled Trigger
-- The workflow runs **automatically every 6 hours** (`0 */6 * * *`).
+- The workflow runs **automatically every 5 minutes** (`*/5 * * * *`).
 - Ensures fresh `visitorData` and `poToken` pairs are generated consistently.
 
 ---
