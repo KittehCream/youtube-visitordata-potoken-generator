@@ -6,11 +6,11 @@ on:
       number_of_entries:
         description: "Amount of VisitorData & PoToken to generate"
         required: true
-        default: 20
+        default: 30
       interval_minutes:
         description: "Interval time in minutes"
         required: true
-        default: 360
+        default: 5
 
   schedule:
     - cron: "*/5 * * * *" # Run every 5 minutes
@@ -47,7 +47,7 @@ jobs:
             let logOutput = "";
             const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN;
             const telegramChatId = process.env.TELEGRAM_CHAT_ID;
-            const entryCount = parseInt(process.env.NUMBER_OF_ENTRIES || "20", 10);
+            const entryCount = parseInt(process.env.NUMBER_OF_ENTRIES || "30", 10);
 
             console.log("✅ ENTRY COUNT:", entryCount);
 
@@ -112,6 +112,7 @@ jobs:
                 logOutput += logEntry;
 
                 if (telegramBotToken && telegramChatId) {
+                  await new Promise(resolve => setTimeout(resolve, 2000)); // 2 seconds delay
                   await axios.post(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
                     chat_id: telegramChatId,
                     text: telegramEntry,
@@ -133,7 +134,7 @@ jobs:
           chmod +x generate_and_send_to_telegram.js
           node generate_and_send_to_telegram.js
         env:
-          NUMBER_OF_ENTRIES: ${{ inputs.number_of_entries || 20 }}
+          NUMBER_OF_ENTRIES: ${{ inputs.number_of_entries || 30 }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
 
