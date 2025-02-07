@@ -6,7 +6,7 @@ on:
       days_to_keep:
         description: "Number of days to keep workflow runs (older runs will be deleted)"
         required: true
-        default: 2
+        default: 1
   schedule:
     - cron: "0 1 * * *" # 01:00 UTC
 
