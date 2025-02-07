@@ -12,6 +12,19 @@ Credit to [YunzheZJU](https://github.com/YunzheZJU/youtube-po-token-generator)
 
 ---
 
+
+## 📢 Join Our Telegram Channel
+
+🚀 **Want the latest YouTube VisitorData & PoToken automatically?**
+
+Join our Telegram channel "**YouTube VisitorData & PoToken Generator**"
+
+🔹 **AUTOMATICALLY GENERATE 30 YouTube VisitorData & PoToken EVERY 15 MINUTES**
+
+[![Telegram Channel](https://img.shields.io/badge/Telegram_channel-2CA5E0?style=for-the-badge&logo=Telegram&logoColor=white)](https://t.me/potoken_generator)
+
+---
+
 ## 📝 Introduction
 
 This project automates the generation of YouTube `visitorData` and `poToken` pairs using the `youtube-po-token-generator` package. The process is handled by a GitHub Actions workflow, which can be **manually triggered** or **scheduled to run automatically**.
@@ -38,7 +51,7 @@ This project includes a **GitHub Actions workflow** that supports both **manual*
 - This is useful when you need on-demand PoTokens.
 
 ### 🔹 Scheduled Trigger
-- The workflow runs **automatically every 5 minutes** (`*/5 * * * *`).
+- The workflow runs **automatically every 15 minutes**.
 - Ensures fresh `visitorData` and `poToken` pairs are generated consistently.
 
 ---
