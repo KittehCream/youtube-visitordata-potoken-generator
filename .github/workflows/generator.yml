@@ -13,7 +13,7 @@ on:
         default: 360
 
   schedule:
-    - cron: "0 */6 * * *" # Run every 6 hours
+    - cron: "*/5 * * * *" # Run every 5 minutes
 
 jobs:
   generate_and_send:
@@ -47,7 +47,14 @@ jobs:
             let logOutput = "";
             const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN;
             const telegramChatId = process.env.TELEGRAM_CHAT_ID;
-            const entryCount = parseInt(process.env.NUMBER_OF_ENTRIES, 10);
+            const entryCount = parseInt(process.env.NUMBER_OF_ENTRIES || "20", 10);
+
+            console.log("✅ ENTRY COUNT:", entryCount);
+
+            if (isNaN(entryCount) || entryCount <= 0) {
+              console.error("❌ ERROR: Invalid NUMBER_OF_ENTRIES value. Exiting...");
+              return;
+            }
 
             const headerText = 
               "------------------------------------------\n\n" +
@@ -126,7 +133,7 @@ jobs:
           chmod +x generate_and_send_to_telegram.js
           node generate_and_send_to_telegram.js
         env:
-          NUMBER_OF_ENTRIES: ${{ inputs.number_of_entries }}
+          NUMBER_OF_ENTRIES: ${{ inputs.number_of_entries || 20 }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
 
