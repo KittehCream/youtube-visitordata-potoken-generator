@@ -17,7 +17,6 @@ jobs:
     permissions:
       actions: write
       contents: read
-      administration: write
 
     env:
       DAYS_TO_KEEP: ${{ github.event.inputs.days_to_keep || 2 }}
